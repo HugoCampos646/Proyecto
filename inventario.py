@@ -3,7 +3,7 @@ import sqlite3
 import pandas as pd
 import os
 import shutil
-from PIL import Image
+#from PIL import Image
 
 # Configuración de la pantalla y nombre de la aplicación
 st.set_page_config(layout="wide", page_title='Inventario')
@@ -301,118 +301,121 @@ else:
                                     disabled=not st.session_state.editable
                                 )
 
-                    col_editar, col_guardar, col_eliminar = st.columns(3)
+                    # Botones de acción (editar, guardar, eliminar)
+                    if not st.session_state.confirmar_eliminacion:
+                        col_editar, col_guardar, col_eliminar = st.columns(3)
 
-                    with col_editar:
-                        if not st.session_state.editable:
-                            if st.button("✏️ Editar"):
-                                st.session_state.editable = True
-                                st.rerun()
+                        with col_editar:
+                            if not st.session_state.editable:
+                                if st.button("✏️ Editar"):
+                                    st.session_state.editable = True
+                                    st.rerun()
 
-                    with col_guardar:
-                        if st.session_state.editable:
-                            if st.button("✅ Aceptar"):
-                                conn = sqlite3.connect(db_path)
-                                cursor = conn.cursor()
-                                
-                                # Preparar la consulta de actualización dinámicamente
-                                set_clause = ", ".join([f"{attr} = ?" for attr in campos_editados.keys()])
-                                query_update = f"""
-                                UPDATE productos
-                                SET {set_clause}
-                                WHERE nombre = ?
-                                """
-                                
-                                # Preparar los valores para la consulta
-                                valores = []
-                                for attr, valor in campos_editados.items():
-                                    if attr in tipos_atributos and tipos_atributos[attr] == 'date' and valor:
-                                        valores.append(valor.strftime('%Y-%m-%d'))
-                                    else:
-                                        valores.append(valor)
-                                
-                                # Añadir el nombre original como último parámetro para WHERE
-                                valores.append(producto_info["nombre"])
-                                
-                                cursor.execute(query_update, valores)
-                                conn.commit()
-                                conn.close()
-                                st.success("Cambios guardados correctamente.")
-                                st.session_state.editable = False
-                                st.rerun()
+                        with col_guardar:
+                            if st.session_state.editable:
+                                if st.button("✅ Aceptar"):
+                                    conn = sqlite3.connect(db_path)
+                                    cursor = conn.cursor()
+                                    
+                                    # Preparar la consulta de actualización dinámicamente
+                                    set_clause = ", ".join([f"{attr} = ?" for attr in campos_editados.keys()])
+                                    query_update = f"""
+                                    UPDATE productos
+                                    SET {set_clause}
+                                    WHERE nombre = ?
+                                    """
+                                    
+                                    # Preparar los valores para la consulta
+                                    valores = []
+                                    for attr, valor in campos_editados.items():
+                                        if attr in tipos_atributos and tipos_atributos[attr] == 'date' and valor:
+                                            valores.append(valor.strftime('%Y-%m-%d'))
+                                        else:
+                                            valores.append(valor)
+                                    
+                                    # Añadir el nombre original como último parámetro para WHERE
+                                    valores.append(producto_info["nombre"])
+                                    
+                                    cursor.execute(query_update, valores)
+                                    conn.commit()
+                                    conn.close()
+                                    st.success("Cambios guardados correctamente.")
+                                    st.session_state.editable = False
+                                    st.rerun()
 
-                    with col_eliminar:
-                        if "confirmar_eliminacion" not in st.session_state:
-                            st.session_state.confirmar_eliminacion = False
+                        with col_eliminar:
+                            if "confirmar_eliminacion" not in st.session_state:
+                                st.session_state.confirmar_eliminacion = False
 
-                        if not st.session_state.confirmar_eliminacion:
                             if st.button("🗑️ Eliminar producto"):
                                 st.session_state.confirmar_eliminacion = True
                                 st.rerun()
-                        else:
-                            st.warning("⚠️ ¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.")
-                            col_si, col_no = st.columns(2)
+                    else:
+                        # Mostrar confirmación de eliminación en una sección separada (no dentro de columnas)
+                        st.warning("⚠️ ¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.")
+                        # Usar nuevas columnas directamente bajo col_datos (no anidadas)
+                        col_si, col_no = st.columns(2)
 
-                            with col_si:
-                                if st.button("✅ Sí, eliminar"):
-                                    conn = sqlite3.connect(db_path)
-                                    cursor = conn.cursor()
+                        with col_si:
+                            if st.button("✅ Sí, eliminar"):
+                                conn = sqlite3.connect(db_path)
+                                cursor = conn.cursor()
 
-                                    # Obtener rutas antes de eliminar el producto
-                                    cursor.execute("""
-                                        SELECT ruta_fotos, ruta_pdf_documentacion, ruta_pdf_especificaciones
-                                        FROM productos
-                                        WHERE nombre = ?
-                                    """, (producto_info["nombre"],))
-                                    rutas = cursor.fetchone()
+                                # Obtener rutas antes de eliminar el producto
+                                cursor.execute("""
+                                    SELECT ruta_fotos, ruta_pdf_documentacion, ruta_pdf_especificaciones
+                                    FROM productos
+                                    WHERE nombre = ?
+                                """, (producto_info["nombre"],))
+                                rutas = cursor.fetchone()
 
-                                    # Eliminar producto de la base de datos
-                                    cursor.execute("DELETE FROM productos WHERE nombre = ?", (producto_info["nombre"],))
-                                    conn.commit()
-                                    conn.close()
+                                # Eliminar producto de la base de datos
+                                cursor.execute("DELETE FROM productos WHERE nombre = ?", (producto_info["nombre"],))
+                                conn.commit()
+                                conn.close()
 
-                                    # Eliminar carpeta de fotos (si existe)
-                                    ruta_fotos = rutas[0]
-                                    if ruta_fotos and os.path.exists(ruta_fotos) and os.path.basename(os.path.dirname(ruta_fotos)) == "fotos":
-                                        try:
-                                            shutil.rmtree(ruta_fotos)
-                                        except Exception as e:
-                                            st.warning(f"No se pudo eliminar la carpeta de fotos: {e}")
+                                # Eliminar carpeta de fotos (si existe)
+                                ruta_fotos = rutas[0]
+                                if ruta_fotos and os.path.exists(ruta_fotos) and os.path.basename(os.path.dirname(ruta_fotos)) == "fotos":
+                                    try:
+                                        shutil.rmtree(ruta_fotos)
+                                    except Exception as e:
+                                        st.warning(f"No se pudo eliminar la carpeta de fotos: {e}")
 
-                                    # Eliminar carpeta de documentación
-                                    ruta_doc = rutas[1]
-                                    if ruta_doc:
-                                        try:
-                                            if os.path.isfile(ruta_doc):
-                                                carpeta = os.path.dirname(ruta_doc)
-                                            else:
-                                                carpeta = ruta_doc
-                                            if os.path.basename(os.path.dirname(carpeta)) == "pdf_documentaciones":
-                                                shutil.rmtree(carpeta)
-                                        except Exception as e:
-                                            st.warning(f"No se pudo eliminar la carpeta de documentación: {e}")
+                                # Eliminar carpeta de documentación
+                                ruta_doc = rutas[1]
+                                if ruta_doc:
+                                    try:
+                                        if os.path.isfile(ruta_doc):
+                                            carpeta = os.path.dirname(ruta_doc)
+                                        else:
+                                            carpeta = ruta_doc
+                                        if os.path.basename(os.path.dirname(carpeta)) == "pdf_documentaciones":
+                                            shutil.rmtree(carpeta)
+                                    except Exception as e:
+                                        st.warning(f"No se pudo eliminar la carpeta de documentación: {e}")
 
-                                    # Eliminar carpeta de especificaciones
-                                    ruta_spec = rutas[2]
-                                    if ruta_spec:
-                                        try:
-                                            if os.path.isfile(ruta_spec):
-                                                carpeta = os.path.dirname(ruta_spec)
-                                            else:
-                                                carpeta = ruta_spec
-                                            if os.path.basename(os.path.dirname(carpeta)) == "pdf_especificaciones":
-                                                shutil.rmtree(carpeta)
-                                        except Exception as e:
-                                            st.warning(f"No se pudo eliminar la carpeta de especificaciones: {e}")
+                                # Eliminar carpeta de especificaciones
+                                ruta_spec = rutas[2]
+                                if ruta_spec:
+                                    try:
+                                        if os.path.isfile(ruta_spec):
+                                            carpeta = os.path.dirname(ruta_spec)
+                                        else:
+                                            carpeta = ruta_spec
+                                        if os.path.basename(os.path.dirname(carpeta)) == "pdf_especificaciones":
+                                            shutil.rmtree(carpeta)
+                                    except Exception as e:
+                                        st.warning(f"No se pudo eliminar la carpeta de especificaciones: {e}")
 
-                                    st.success("Producto eliminado correctamente.")
-                                    st.session_state.confirmar_eliminacion = False
-                                    st.rerun()
+                                st.success("Producto eliminado correctamente.")
+                                st.session_state.confirmar_eliminacion = False
+                                st.rerun()
 
-                            with col_no:
-                                if st.button("❌ Cancelar"):
-                                    st.session_state.confirmar_eliminacion = False
-                                    st.rerun()
+                        with col_no:
+                            if st.button("❌ Cancelar"):
+                                st.session_state.confirmar_eliminacion = False
+                                st.rerun()
 
                 # Columna de imágenes (solo visualización)
                 with col_imagenes:
@@ -429,33 +432,49 @@ else:
                     if os.path.exists(ruta_fotos):
                         fotos = [f for f in os.listdir(ruta_fotos) if f.lower().endswith(('png', 'jpg', 'jpeg'))]
                         hay_imagenes = len(fotos) > 0
-                     
+                    
+                    # Crear un contenedor con altura fija para las imágenes
+                    imagen_container = st.container()
+                    
                     if hay_imagenes:
                         # Inicializar o corregir índice de imagen
                         if "imagen_actual_datos" not in st.session_state or st.session_state.imagen_actual_datos >= len(fotos):
                             st.session_state.imagen_actual_datos = 0
 
-                        # Mostrar imagen actual
-                        foto_actual = os.path.join(ruta_fotos, fotos[st.session_state.imagen_actual_datos])
-                        st.image(
-                            foto_actual,
-                            caption=fotos[st.session_state.imagen_actual_datos],
-                            use_container_width=True
-                        )
+                        # Mostrar imagen actual dentro de un contenedor de altura fija
+                        with imagen_container:
+                            # Crear un espacio fijo para la imagen
+                            imagen_height = 300  # Altura fija en píxeles
+                            st.markdown(f"""
+                                <div style="display: flex; justify-content: center; align-items: center; height: {imagen_height}px; overflow: hidden;">
+                                </div>
+                            """, unsafe_allow_html=True)
+                            
+                            foto_actual = os.path.join(ruta_fotos, fotos[st.session_state.imagen_actual_datos])
+                            st.image(
+                                foto_actual,
+                                caption=None,  # Sin caption
+                                use_container_width=True
+                            )
                         
                         # Controles de navegación
                         col_anterior, col_siguiente = st.columns(2)
                         with col_anterior:
-                            if st.button("🡄", key="anterior_datos"):
+                            if st.button("⬅️ Anterior", key="anterior_datos"):
                                 st.session_state.imagen_actual_datos = (st.session_state.imagen_actual_datos - 1) % len(fotos)
                                 st.rerun()
                         with col_siguiente:
-                            if st.button("🡆", key="siguiente_datos"):
+                            if st.button("Siguiente ➡️", key="siguiente_datos"):
                                 st.session_state.imagen_actual_datos = (st.session_state.imagen_actual_datos + 1) % len(fotos)
                                 st.rerun()
-
                     else:
-                        st.warning("No hay imágenes disponibles para este producto.")
+                        # Mostrar mensaje en el contenedor de tamaño fijo
+                        with imagen_container:
+                            st.markdown(f"""
+                                <div style="display: flex; justify-content: center; align-items: center; height: 300px; overflow: hidden;">
+                                    <p style="text-align: center;">No hay imágenes disponibles para este producto.</p>
+                                </div>
+                            """, unsafe_allow_html=True)
 
 
             # Pestaña 2: PDFs Descargables
@@ -1033,7 +1052,6 @@ else:
 #    ╚═╝  ╚═╝ ╚═╝  ╚═══╝ ╚═╝  ╚═╝ ╚═════╝  ╚═╝ ╚═╝  ╚═╝
                                              
 
-    # Página de añadir producto
     # Página de añadir producto
     elif st.session_state.current_page == "Añadir productos":
         st.write("### Añadir producto")
