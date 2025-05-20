@@ -429,7 +429,7 @@ else:
                     if os.path.exists(ruta_fotos):
                         fotos = [f for f in os.listdir(ruta_fotos) if f.lower().endswith(('png', 'jpg', 'jpeg'))]
                         hay_imagenes = len(fotos) > 0
-                    
+                     
                     if hay_imagenes:
                         # Inicializar o corregir índice de imagen
                         if "imagen_actual_datos" not in st.session_state or st.session_state.imagen_actual_datos >= len(fotos):
