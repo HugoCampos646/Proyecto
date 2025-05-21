@@ -3,7 +3,6 @@ import sqlite3
 import pandas as pd
 import os
 import shutil
-#from PIL import Image
 
 # Configuración de la pantalla y nombre de la aplicación
 st.set_page_config(layout="wide", page_title='Inventario')
@@ -462,11 +461,11 @@ else:
                         # Controles de navegación
                         col_anterior, col_siguiente = st.columns(2)
                         with col_anterior:
-                            if st.button("⬅️ Anterior", key="anterior_datos"):
+                            if st.button("🡄", key="anterior_datos"):
                                 st.session_state.imagen_actual_datos = (st.session_state.imagen_actual_datos - 1) % len(fotos)
                                 st.rerun()
                         with col_siguiente:
-                            if st.button("Siguiente ➡️", key="siguiente_datos"):
+                            if st.button("🡆", key="siguiente_datos"):
                                 st.session_state.imagen_actual_datos = (st.session_state.imagen_actual_datos + 1) % len(fotos)
                                 st.rerun()
                     else:
