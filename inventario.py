@@ -229,6 +229,8 @@ else:
             st.session_state.editable = False
         if "selected_product" not in st.session_state:
             st.session_state.selected_product = None  # Inicializamos el producto seleccionado previamente
+        if "confirmar_eliminacion" not in st.session_state:
+            st.session_state.confirmar_eliminacion = False
 
         # Verificar si hay productos disponibles
         if len(df_filtrado) > 0:
@@ -470,11 +472,7 @@ else:
                     else:
                         # Mostrar mensaje en el contenedor de tamaño fijo
                         with imagen_container:
-                            st.markdown(f"""
-                                <div style="display: flex; justify-content: center; align-items: center; height: 300px; overflow: hidden;">
-                                    <p style="text-align: center;">No hay imágenes disponibles para este producto.</p>
-                                </div>
-                            """, unsafe_allow_html=True)
+                            st.warning("No hay imágenes disponibles para este producto.")
 
 
             # Pestaña 2: PDFs Descargables
@@ -1052,6 +1050,7 @@ else:
 #    ╚═╝  ╚═╝ ╚═╝  ╚═══╝ ╚═╝  ╚═╝ ╚═════╝  ╚═╝ ╚═╝  ╚═╝
                                              
 
+    # Página de añadir producto
     # Página de añadir producto
     elif st.session_state.current_page == "Añadir productos":
         st.write("### Añadir producto")
