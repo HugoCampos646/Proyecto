@@ -1283,6 +1283,7 @@ else:
 
 
     # Página de Opciones Base de Datos
+    # Página de Opciones Base de Datos
     elif st.session_state.current_page == "Opciones base de datos":
         # Verificar si el usuario es administrador
         conn = sqlite3.connect("base_datos_inventario.db")
@@ -1350,7 +1351,8 @@ else:
                         st.session_state.mensaje_agregar = {"error": "El nombre del atributo no puede estar vacío."}
                         st.rerun()
                     else:
-                        nuevo_atributo = nuevo_atributo.strip().lower()
+                        # Reemplazar espacios con barras bajas
+                        nuevo_atributo = nuevo_atributo.strip().lower().replace(" ", "_")
                         cursor.execute("SELECT COUNT(*) FROM atributos WHERE nombre = ?", (nuevo_atributo,))
                         exists = cursor.fetchone()[0]
 
