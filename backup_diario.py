@@ -3,6 +3,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
+
 def limpiar_ruta(ruta):
     # Convierte a str y elimina comillas al inicio y fin si las tiene
     return str(ruta).strip('"')
