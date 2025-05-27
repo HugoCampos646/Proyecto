@@ -14,9 +14,9 @@ from configuración_inicial import hacer_backup_diario, configurarPantallaLogo, 
 #     ╚═════╝  ╚═════╝  ╚═╝  ╚═══╝ ╚═╝      ╚═╝  ╚═════╝  
                                                                                                       
 
+configurarPantallaLogo()
 buscarBaseDatos()
 hacer_backup_diario()
-configurarPantallaLogo()
 
 
 #    ██╗ ███╗   ██╗  ██████╗ ██╗  ██████╗      ███████╗ ███████╗ ███████╗ ██╗  ██████╗  ███╗   ██╗
