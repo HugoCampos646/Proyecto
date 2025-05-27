@@ -1294,7 +1294,6 @@ else:
 
 
     # Página de Opciones Base de Datos
-    # Página de Opciones Base de Datos
     elif st.session_state.current_page == "Opciones base de datos":
         # Verificar si el usuario es administrador
         conn = sqlite3.connect("base_datos_inventario.db")
@@ -1391,6 +1390,7 @@ else:
                                 st.session_state.mensaje_agregar = {"success": f"Atributo '{nuevo_atributo}' agregado correctamente."}
                                 st.session_state.limpiar_input_atributo = True
                                 st.session_state.valor_actual_input = ""
+                                del st.session_state["input_nuevo_atributo"]
                                 st.rerun()
                             except sqlite3.Error as e:
                                 st.session_state.mensaje_agregar = {"error": f"Error al agregar el atributo: {e}"}
