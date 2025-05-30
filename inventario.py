@@ -1293,7 +1293,7 @@ else:
 #     ╚═════╝  ╚══════╝ ╚══════╝    ╚═╝    ╚═╝  ╚═════╝  ╚═╝  ╚═══╝     ╚═════╝  ╚═════╝ 
 
 
-    # Página de Opciones Base de Datos
+# Página de Opciones Base de Datos
     elif st.session_state.current_page == "Opciones base de datos":
         # Verificar si el usuario es administrador
         conn = sqlite3.connect("base_datos_inventario.db")
@@ -1395,85 +1395,85 @@ else:
                                 st.session_state.mensaje_agregar = {"error": f"Error al agregar el atributo: {e}"}
                                 st.session_state.valor_actual_input = nuevo_atributo
                                 st.rerun()
+            st.subheader("Eliminar Atributo")
 
-        st.subheader("Eliminar Atributo")
+            cursor.execute("""
+                SELECT nombre FROM atributos 
+                WHERE borrable = 1
+                ORDER BY orden
+            """)
+            atributos = [a[0] for a in cursor.fetchall()]
 
-        cursor.execute("""
-            SELECT nombre FROM atributos 
-            WHERE borrable = 1
-            ORDER BY orden
-        """)
-        atributos = [a[0] for a in cursor.fetchall()]
+            if atributos:
+                with st.form("eliminar_atributo"):
+                    atributo_seleccionado = st.selectbox("Seleccionar atributo a eliminar:", options=[""] + atributos)
+                    st.warning("⚠️ ADVERTENCIA: Al eliminar un atributo se perderán todos los datos asociados a él en todos los productos.")
+                    submit_eliminar = st.form_submit_button("Eliminar atributo")
 
-        if atributos:
-            with st.form("eliminar_atributo"):
-                atributo_seleccionado = st.selectbox("Seleccionar atributo a eliminar:", options=[""] + atributos)
-                st.warning("⚠️ ADVERTENCIA: Al eliminar un atributo se perderán todos los datos asociados a él en todos los productos.")
-                submit_eliminar = st.form_submit_button("Eliminar atributo")
+                    if st.session_state.mensaje_eliminar:
+                        if "error" in st.session_state.mensaje_eliminar:
+                            st.error(st.session_state.mensaje_eliminar["error"])
+                        elif "success" in st.session_state.mensaje_eliminar:
+                            st.success(st.session_state.mensaje_eliminar["success"])
+                        st.session_state.mensaje_eliminar = None
 
-                if st.session_state.mensaje_eliminar:
-                    if "error" in st.session_state.mensaje_eliminar:
-                        st.error(st.session_state.mensaje_eliminar["error"])
-                    elif "success" in st.session_state.mensaje_eliminar:
-                        st.success(st.session_state.mensaje_eliminar["success"])
-                    st.session_state.mensaje_eliminar = None
+                    if submit_eliminar:
+                        if not atributo_seleccionado:
+                            st.session_state.mensaje_eliminar = {"error": "Por favor, selecciona un atributo para eliminar."}
+                            st.rerun()
+                        try:
+                            nombre_eliminado = atributo_seleccionado
 
-                if submit_eliminar:
-                    if not atributo_seleccionado:
-                        st.session_state.mensaje_eliminar = {"error": "Por favor, selecciona un atributo para eliminar."}
-                        st.rerun()
-                    try:
-                        nombre_eliminado = atributo_seleccionado
+                            cursor.execute("DELETE FROM atributos WHERE nombre = ?", (atributo_seleccionado,))
 
-                        cursor.execute("DELETE FROM atributos WHERE nombre = ?", (atributo_seleccionado,))
+                            cursor.execute("PRAGMA table_info(productos)")
+                            columnas_actuales_info = cursor.fetchall()
+                            columnas_filtradas = [col for col in columnas_actuales_info if col[1] != atributo_seleccionado]
 
-                        cursor.execute("PRAGMA table_info(productos)")
-                        columnas_actuales_info = cursor.fetchall()
-                        columnas_filtradas = [col for col in columnas_actuales_info if col[1] != atributo_seleccionado]
+                            orden_fijo = [
+                                "nombre", "ubicacion", "descripcion", "palabras_clave",
+                                "ruta_fotos", "ruta_pdf_especificaciones", "ruta_pdf_documentacion",
+                                "persona_responsable", "numero_inventario", "fecha_compra",
+                                "numero_serie", "proyecto", "numero_factura"
+                            ]
 
-                        orden_fijo = [
-                            "nombre", "ubicacion", "descripcion", "palabras_clave",
-                            "ruta_fotos", "ruta_pdf_especificaciones", "ruta_pdf_documentacion",
-                            "persona_responsable", "numero_inventario", "fecha_compra",
-                            "numero_serie", "proyecto", "numero_factura"
-                        ]
+                            columnas_filtradas_ordenadas = sorted(
+                                columnas_filtradas,
+                                key=lambda c: orden_fijo.index(c[1]) if c[1] in orden_fijo else 999
+                            )
 
-                        columnas_filtradas_ordenadas = sorted(
-                            columnas_filtradas,
-                            key=lambda c: orden_fijo.index(c[1]) if c[1] in orden_fijo else 999
-                        )
+                            columnas_definiciones = []
+                            for col in columnas_filtradas_ordenadas:
+                                columna_def = f"{col[1]} {col[2]}"
+                                if col[3]:
+                                    columna_def += " NOT NULL"
+                                columnas_definiciones.append(columna_def)
 
-                        columnas_definiciones = []
-                        for col in columnas_filtradas_ordenadas:
-                            columna_def = f"{col[1]} {col[2]}"
-                            if col[3]:
-                                columna_def += " NOT NULL"
-                            columnas_definiciones.append(columna_def)
+                            create_table_script = "CREATE TABLE productos (\n"
+                            create_table_script += ",\n".join([f"  {col_def}" for col_def in columnas_definiciones])
+                            create_table_script += "\n);"
 
-                        create_table_script = "CREATE TABLE productos (\n"
-                        create_table_script += ",\n".join([f"  {col_def}" for col_def in columnas_definiciones])
-                        create_table_script += "\n);"
+                            columnas_nombres = [col[1] for col in columnas_filtradas_ordenadas]
+                            columnas_str = ", ".join(columnas_nombres)
 
-                        columnas_nombres = [col[1] for col in columnas_filtradas_ordenadas]
-                        columnas_str = ", ".join(columnas_nombres)
+                            cursor.execute("ALTER TABLE productos RENAME TO productos_backup")
+                            cursor.execute(create_table_script)
+                            cursor.execute(f"INSERT INTO productos ({columnas_str}) SELECT {columnas_str} FROM productos_backup")
+                            cursor.execute("DROP TABLE productos_backup")
 
-                        cursor.execute("ALTER TABLE productos RENAME TO productos_backup")
-                        cursor.execute(create_table_script)
-                        cursor.execute(f"INSERT INTO productos ({columnas_str}) SELECT {columnas_str} FROM productos_backup")
-                        cursor.execute("DROP TABLE productos_backup")
+                            conn.commit()
+                            st.session_state.mensaje_eliminar = {"success": f"Atributo '{nombre_eliminado}' eliminado correctamente de la base de datos y de los productos."}
+                            st.session_state.valor_actual_input = ""
+                            if "input_nuevo_atributo" in st.session_state:
+                                del st.session_state["input_nuevo_atributo"]
+                            st.rerun()
 
-                        conn.commit()
-                        st.session_state.mensaje_eliminar = {"success": f"Atributo '{nombre_eliminado}' eliminado correctamente de la base de datos y de los productos."}
-                        st.session_state.valor_actual_input = ""
-                        if "input_nuevo_atributo" in st.session_state:
-                            del st.session_state["input_nuevo_atributo"]
-                        st.rerun()
-
-                    except Exception as e:
-                        st.session_state.mensaje_eliminar = {"error": f"Error al eliminar el atributo: {e}"}
-                        st.rerun()
-        else:
-            st.info("No hay atributos que se puedan eliminar.")
+                        except Exception as e:
+                            st.session_state.mensaje_eliminar = {"error": f"Error al eliminar el atributo: {e}"}
+                            st.rerun()
+            else:
+                st.info("No hay atributos que se puedan eliminar.")
+                
 
 
         with tab_mostrar:
